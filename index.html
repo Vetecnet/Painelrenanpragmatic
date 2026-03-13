@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Revendedor</title>
+    <style>
+        body { 
+            background-color: #121212; 
+            color: #e0e0e0; 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            padding: 15px; 
+            height: 100vh; 
+            box-sizing: border-box; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            align-items: center;
+            gap: 10px; 
+            overflow: hidden; 
+        }
+
+        .main-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1.5fr; 
+            gap: 20px; 
+            width: 100%; 
+            max-width: 1200px; 
+            flex-grow: 1; 
+            min-height: 0; 
+        }
+
+        .panel { 
+            background: #1e1e1e; 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 1px solid #333; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%; 
+            box-sizing: border-box;
+        }
+        
+        h2 { color: #00ff88; margin-top: 0; margin-bottom: 15px; font-size: 1.2em;}
+        h3 { color: #00ccff; margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 1.1em;}
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 11px; font-weight: bold;}
+        input, select { width: 100%; padding: 10px; margin-bottom: 10px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 6px; box-sizing: border-box; font-family: monospace; font-size: 13px;}
+        input[type=text], input[type=email], input[type=number] { font-family: sans-serif; }
+        
+        input:disabled { background: #111; color: #00ccff; border-color: #005577; cursor: not-allowed; font-weight: bold; opacity: 0.8; }
+
+        #hwidInput { font-family: monospace; color: #ffcc00; font-size: 12px; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 13px;}
+        .btn-add { background: #0066cc; color: white; margin-top: 5px;} .btn-add:hover { background: #0055aa; }
+        .btn-refresh { background: transparent; color: #00ccff; width: auto; padding: 5px 10px; font-size: 18px; } .btn-refresh:hover { transform: scale(1.1); color: #fff;}
+        .btn-delete { background: #cc0000; color: white; padding: 4px 8px; font-size: 10px; width: auto; } .btn-delete:hover { background: #990000; }
+        
+        .results-container { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            margin-top: 0; 
+            border: 1px solid #333; 
+            border-radius: 6px; 
+            min-height: 0; 
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th { background: #252525; position: sticky; top: 0; text-align: left; padding: 8px; color: #aaa; z-index: 10;}
+        td { border-bottom: 1px solid #333; padding: 6px 8px; vertical-align: middle; }
+        tr:hover { background: #2a2a2a; }
+        .hwid-cell { font-family: monospace; color: #ffcc00; font-size: 10px; }
+        
+        .flex-row { display: flex; gap: 10px; }
+        #status-msg { margin-top: 10px; padding: 8px; border-radius: 6px; font-size: 12px; display: none; text-align: center; }
+        .sucesso { background: rgba(0, 255, 136, 0.1); color: #00ff88; border: 1px solid #00ff88; }
+        .erro { background: rgba(255, 68, 68, 0.1); color: #ff4444; border: 1px solid #ff4444; }
+
+        .footer-credits {
+            width: 100%;
+            max-width: 1200px;
+            text-align: center;
+            padding-top: 10px;
+            border-top: 1px solid #333;
+            color: #666;
+            font-size: 10px;
+            line-height: 1.4;
+            flex-shrink: 0; 
+        }
+        .footer-credits strong { color: #aaa; }
+        .footer-credits a { color: #888; text-decoration: none; transition: 0.3s; }
+        .footer-credits a:hover { color: #00ccff; }
+    </style>
+</head>
+<body>
+
+<div class="main-grid">
+    <div class="panel panel-left">
+        <h2>➕ Nova Licença</h2>
+        <form id="formCadastrar" style="display: flex; flex-direction: column; height: 100%;">
+            <div style="flex-grow: 1;">
+                <label for="revendedorDisplayCad">👤 Revendedor (Você):</label>
+                <input type="text" id="revendedorDisplayCad" disabled>
+
+                <label for="hwidInput">🔑 HWID do Cliente:</label>
+                <input type="text" id="hwidInput" placeholder="Cole o ID aqui..." required autocomplete="off">
+                
+                <label for="emailInput">📧 Email do Cliente (Obrigatório):</label>
+                <input type="email" id="emailInput" placeholder="cliente@email.com" required autocomplete="off">
+
+                <div class="flex-row">
+                    <div style="flex: 1;">
+                        <label for="diasInput">🗓️ Dias:</label>
+                        <input type="number" id="diasInput" min="1" value="30" required>
+                    </div>
+                     <div style="flex: 1; display: flex; align-items: flex-end;">
+                         <select onchange="document.getElementById('diasInput').value = this.value">
+                             <option value="">Presets...</option>
+                             <option value="1">1 Dia</option>
+                             <option value="30" selected>30 Dias</option>
+                             <option value="365">1 Ano</option>
+                         </select>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <button type="submit" class="btn-add">SALVAR LICENÇA</button>
+                <div id="status-msg"></div>
+            </div>
+        </form>
+    </div>
+
+    <div class="panel panel-right">
+        <h3>
+            <span>📋 Seus Clientes</span>
+            <button id="btnAtualizarLista" class="btn-refresh" title="Atualizar Lista">🔄</button>
+        </h3>
+        
+        <div style="display: none;">
+            <input type="text" id="revendedorDisplaySearch" disabled>
+        </div>
+
+        <div class="results-container">
+            <table id="tabelaClientes">
+                <thead>
+                    <tr>
+                        <th>HWID</th>
+                        <th>Email</th>
+                        <th>📍 Localização</th>
+                        <th>🌐 IP</th>
+                        <th>🕐 Última Conexão</th>
+                        <th>Vence em</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="listaClientesBody">
+                    <tr><td colspan="7" style="text-align:center; color:#666; padding: 20px;">Carregando sua lista...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="footer-credits">
+    <div>Criado por: <strong>Vetecnet Informatica ME.</strong></div>
+    <div>Programador Senior: <strong>Fábio Cipriano da Silva.</strong></div>
+    <div style="margin-top: 3px;">
+        Contato: 13997949354 | 
+        Email: vetecnetloja@gmail.com
+    </div>
+</div>
+
+<script>
+    // LEMBRE-SE DE ATUALIZAR O SEU LINK DO CLOUDFLARE AQUI!
+    const BASE_API_URL = "https://forbes-develops-hospitality-amend.trycloudflare.com/admin"; 
+    const REVENDEDOR_CONFIGURADO = "renanzimoficial"; 
+    
+    const formCadastrar = document.getElementById('formCadastrar');
+    const statusMsg = document.getElementById('status-msg');
+    const btnAtualizarLista = document.getElementById('btnAtualizarLista');
+    const listaBody = document.getElementById('listaClientesBody');
+
+    window.onload = () => {
+        if(REVENDEDOR_CONFIGURADO === "NOME_DO_REVENDEDOR_AQUI" || REVENDEDOR_CONFIGURADO.trim() === "") {
+            alert("ERRO DE CONFIGURAÇÃO:\nO dono do sistema esqueceu de configurar o nome do revendedor neste arquivo.");
+            document.body.innerHTML = "<div style='display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;text-align:center;'><h1 style='color:#ff4444;'>Arquivo não configurado.</h1><p style='color:#aaa;'>Contate o administrador do sistema para receber seu painel personalizado.</p></div>";
+            return;
+        }
+        document.getElementById('revendedorDisplayCad').value = REVENDEDOR_CONFIGURADO;
+        document.getElementById('revendedorDisplaySearch').value = REVENDEDOR_CONFIGURADO;
+        buscarClientesDoRevendedor();
+    };
+
+    formCadastrar.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const revendedor = REVENDEDOR_CONFIGURADO; 
+        const hwid = document.getElementById('hwidInput').value.trim();
+        const email = document.getElementById('emailInput').value.trim();
+        const dias = document.getElementById('diasInput').value;
+
+        if(hwid.length < 5) return mostrarStatus("ID inválido.", false);
+        if(email.length < 5 || !email.includes('@')) return mostrarStatus("Email inválido ou obrigatório.", false);
+
+        mostrarStatus("Salvando...", true, true);
+
+        try {
+            const response = await fetch(`${BASE_API_URL}/adicionar`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hwid, email, dias, revendedor })
+            });
+            const data = await response.json();
+            if (response.ok && data.sucesso) {
+                mostrarStatus(`✅ ${data.msg}`, true);
+                document.getElementById('hwidInput').value = "";
+                document.getElementById('emailInput').value = "";
+                buscarClientesDoRevendedor();
+            } else { mostrarStatus(`❌ Erro: ${data.msg}`, false); }
+        } catch (error) { mostrarStatus("Erro de conexão.", false); }
+    });
+
+    btnAtualizarLista.addEventListener('click', buscarClientesDoRevendedor);
+
+    async function buscarClientesDoRevendedor() {
+        const revendedor = REVENDEDOR_CONFIGURADO;
+        listaBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#888;">Atualizando lista...</td></tr>';
+
+        try {
+            const response = await fetch(`${BASE_API_URL}/clientes/${revendedor}`);
+            const data = await response.json();
+            if(response.ok && data.sucesso) {
+                renderizarTabela(data.clientes);
+            } else {
+                listaBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red; padding:20px;">Erro: ${data.msg}</td></tr>`;
+            }
+        } catch (error) {
+            listaBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red; padding:20px;">Erro de conexão ao buscar lista. Verifique se o servidor está online.</td></tr>`;
+        }
+    }
+
+    async function deletarCliente(hwid) {
+        const revendedorNome = REVENDEDOR_CONFIGURADO;
+        if(!confirm(`Tem certeza que deseja BLOQUEAR o acesso do cliente ${hwid}?`)) return;
+
+        try {
+            const response = await fetch(`${BASE_API_URL}/cliente`, {
+                method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hwid: hwid, revendedor: revendedorNome })
+            });
+            const data = await response.json();
+            if(response.ok && data.sucesso) {
+                alert("Cliente removido com sucesso!");
+                buscarClientesDoRevendedor();
+            } else {
+                alert(`Erro ao apagar: ${data.msg}`);
+            }
+        } catch (error) { alert("Erro de conexão ao tentar apagar."); }
+    }
+
+    function renderizarTabela(clientesObj) {
+        listaBody.innerHTML = '';
+        const listaHwids = Object.keys(clientesObj);
+        
+        if(listaHwids.length === 0) {
+            listaBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 20px; color: #aaa;">Você ainda não tem clientes cadastrados.</td></tr>';
+            return;
+        }
+
+        listaHwids.sort((a, b) => new Date(clientesObj[b].criadoEm) - new Date(clientesObj[a].criadoEm));
+
+        listaHwids.forEach(hwid => {
+            const dados = clientesObj[hwid];
+            const dataValidade = new Date(dados.validade);
+            const agora = new Date();
+            const vencido = agora > dataValidade;
+            
+            const ultimaConexao = dados.ultimaConexao 
+                ? new Date(dados.ultimaConexao).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+                : '<span style="color:#555">—</span>';
+            const localizacao = dados.localizacao || '<span style="color:#555">—</span>';
+            const ipCliente = dados.ip || '<span style="color:#555">—</span>';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="hwid-cell" title="${hwid}">${hwid}</td>
+                <td>${dados.email}</td>
+                <td style="font-size:10px; color:#aaa;">${localizacao}</td>
+                <td style="font-family:monospace; font-size:10px; color:#ffaa00;">${ipCliente}</td>
+                <td style="font-size:10px; color:#888; white-space:nowrap;">${ultimaConexao}</td>
+                <td style="color: ${vencido ? '#ff4444' : '#00ff88'}; white-space:nowrap;">
+                    ${dataValidade.toLocaleDateString('pt-BR')}
+                    ${vencido ? '(Vencido)' : ''}
+                </td>
+                <td style="text-align: center;">
+                    <button class="btn-delete" onclick="deletarCliente('${hwid}')">Bloquear</button>
+                </td>
+            `;
+            listaBody.appendChild(tr);
+        });
+    }
+
+    function mostrarStatus(msg, isSuccess, isLoading) {
+        statusMsg.innerText = msg; 
+        statusMsg.style.display = 'block';
+        statusMsg.className = isSuccess ? (isLoading ? '' : 'sucesso') : 'erro';
+        if(isLoading) {
+            statusMsg.style.color = "#aaa"; 
+        } else {
+            setTimeout(() => { statusMsg.style.display = 'none'; }, 5000);
+        }
+    }
+</script>
+</body>
+</html>
