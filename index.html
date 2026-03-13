@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Revendedor - Senior</title>
+    <style>
+        body { 
+            background-color: #121212; 
+            color: #e0e0e0; 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            padding: 10px; 
+            min-height: 100vh; 
+            box-sizing: border-box; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            gap: 15px; 
+            overflow-y: auto; /* Permite rolar no celular */
+        }
+
+        /* --- GRID RESPONSIVO --- */
+        .main-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1.8fr; /* Lado a lado no PC */
+            gap: 20px; 
+            width: 100%; 
+            max-width: 1300px; 
+        }
+
+        /* Ajuste para Celular */
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr; /* Empilha no celular */
+            }
+            body { padding: 5px; }
+            h2 { font-size: 1.1em; }
+        }
+
+        .panel { 
+            background: #1e1e1e; 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 1px solid #333; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+
+        h2 { color: #00ff88; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        h3 { color: #00ccff; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+
+        label { display: block; margin-bottom: 5px; color: #aaa; font-size: 11px; font-weight: bold; }
+        
+        input, select { 
+            width: 100%; padding: 12px; margin-bottom: 12px; 
+            background: #2a2a2a; border: 1px solid #444; color: #fff; 
+            border-radius: 6px; box-sizing: border-box; font-size: 14px;
+        }
+
+        input:disabled { background: #111; color: #00ccff; opacity: 0.8; }
+
+        button { width: 100%; padding: 14px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-add { background: #0066cc; color: white; font-size: 14px; }
+        .btn-add:hover { background: #0055aa; }
+        
+        .btn-refresh { background: transparent; color: #00ccff; width: auto; padding: 5px; font-size: 20px; }
+        .btn-delete { background: #cc0000; color: white; padding: 6px 10px; font-size: 11px; width: auto; border-radius: 4px; }
+
+        /* TABELA RESPONSIVA */
+        .results-container { 
+            overflow-x: auto; 
+            border: 1px solid #333; 
+            border-radius: 8px;
+            background: #1a1a1a;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table { width: 100%; border-collapse: collapse; min-width: 700px; /* Impede esmagamento */ }
+        th { background: #252525; padding: 12px; text-align: left; color: #aaa; font-size: 12px; position: sticky; top: 0; }
+        td { border-bottom: 1px solid #333; padding: 10px 12px; font-size: 12px; }
+        
+        .hwid-cell { font-family: monospace; color: #ffcc00; font-size: 11px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+
+        .footer-credits {
+            text-align: center; color: #666; font-size: 11px; padding: 20px; line-height: 1.5;
+        }
+
+        #status-msg { margin-top: 10px; padding: 10px; border-radius: 6px; font-size: 13px; display: none; text-align: center; }
+        .sucesso { background: rgba(0, 255, 136, 0.1); color: #00ff88; border: 1px solid #00ff88; }
+        .erro { background: rgba(255, 68, 68, 0.1); color: #ff4444; border: 1px solid #ff4444; }
+    </style>
+</head>
+<body>
+
+<div class="main-grid">
+    <div class="panel">
+        <h2>➕ Nova Licença</h2>
+        <form id="formCadastrar">
+            <label>👤 Revendedor:</label>
+            <input type="text" id="revendedorDisplayCad" disabled>
+
+            <label>🔑 HWID do Cliente:</label>
+            <input type="text" id="hwidInput" placeholder="Cole o ID aqui..." required>
+            
+            <label>📧 Email do Cliente:</label>
+            <input type="email" id="emailInput" placeholder="cliente@email.com" required>
+
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label>🗓️ Dias:</label>
+                    <input type="number" id="diasInput" min="1" value="30" required>
+                </div>
+                <div style="flex: 1; align-self: flex-end;">
+                    <select onchange="document.getElementById('diasInput').value = this.value">
+                        <option value="1">1 Dia</option>
+                        <option value="30" selected>30 Dias</option>
+                        <option value="365">1 Ano</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-add">SALVAR LICENÇA</button>
+            <div id="status-msg"></div>
+        </form>
+    </div>
+
+    <div class="panel">
+        <h3>
+            <span>📋 Seus Clientes</span>
+            <button id="btnAtualizarLista" class="btn-refresh">🔄</button>
+        </h3>
+        
+        <div class="results-container">
+            <table id="tabelaClientes">
+                <thead>
+                    <tr>
+                        <th>HWID</th>
+                        <th>Email</th>
+                        <th>📍 Local</th>
+                        <th>🌐 IP</th>
+                        <th>🕐 Conexão</th>
+                        <th>Vencimento</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="listaClientesBody">
+                    <tr><td colspan="7" style="text-align:center; padding: 30px; color:#666;">Carregando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="footer-credits">
+    Criado por: <strong>Vetecnet Informatica ME.</strong><br>
+    Programador Senior: <strong>Fábio Cipriano da Silva.</strong><br>
+    Contato: 13997949354 | Email: vetecnetloja@gmail.com
+</div>
+
+<script>
+    // --- CONFIGURAÇÃO DA TUA API ---
+    const BASE_API_URL = "https://forbes-develops-hospitality-amend.trycloudflare.com/admin"; 
+    const REVENDEDOR_CONFIGURADO = "renanzimoficial"; 
+    
+    const formCadastrar = document.getElementById('formCadastrar');
+    const statusMsg = document.getElementById('status-msg');
+    const listaBody = document.getElementById('listaClientesBody');
+
+    window.onload = () => {
+        document.getElementById('revendedorDisplayCad').value = REVENDEDOR_CONFIGURADO;
+        buscarClientesDoRevendedor();
+    };
+
+    // FUNÇÃO: ADICIONAR
+    formCadastrar.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const hwid = document.getElementById('hwidInput').value.trim();
+        const email = document.getElementById('emailInput').value.trim();
+        const dias = document.getElementById('diasInput').value;
+
+        mostrarStatus("Salvando...", true, true);
+
+        try {
+            const response = await fetch(`${BASE_API_URL}/adicionar`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hwid, email, dias, revendedor: REVENDEDOR_CONFIGURADO })
+            });
+            const data = await response.json();
+            if (data.sucesso) {
+                mostrarStatus(`✅ ${data.msg}`, true);
+                formCadastrar.reset();
+                document.getElementById('revendedorDisplayCad').value = REVENDEDOR_CONFIGURADO;
+                buscarClientesDoRevendedor();
+            } else { mostrarStatus(`❌ ${data.msg}`, false); }
+        } catch (error) { mostrarStatus("Erro de conexão.", false); }
+    });
+
+    // FUNÇÃO: BUSCAR LISTA
+    async function buscarClientesDoRevendedor() {
+        try {
+            const response = await fetch(`${BASE_API_URL}/clientes/${REVENDEDOR_CONFIGURADO}`);
+            const data = await response.json();
+            if(data.sucesso) {
+                renderizarTabela(data.clientes);
+            }
+        } catch (error) {
+            listaBody.innerHTML = '<tr><td colspan="7" style="color:red; text-align:center;">Erro ao conectar com a API.</td></tr>';
+        }
+    }
+
+    // FUNÇÃO: DELETAR/BLOQUEAR
+    async function deletarCliente(hwid) {
+        if(!confirm(`Bloquear o acesso: ${hwid}?`)) return;
+        try {
+            const response = await fetch(`${BASE_API_URL}/cliente`, {
+                method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hwid: hwid, revendedor: REVENDEDOR_CONFIGURADO })
+            });
+            const data = await response.json();
+            if(data.sucesso) { buscarClientesDoRevendedor(); }
+        } catch (error) { alert("Erro ao deletar."); }
+    }
+
+    function renderizarTabela(clientesObj) {
+        listaBody.innerHTML = '';
+        const hwids = Object.keys(clientesObj);
+        
+        if(hwids.length === 0) {
+            listaBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">Nenhum cliente.</td></tr>';
+            return;
+        }
+
+        hwids.forEach(hwid => {
+            const d = clientesObj[hwid];
+            const vencimento = new Date(d.validade);
+            const corVencido = new Date() > vencimento ? '#ff4444' : '#00ff88';
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="hwid-cell">${hwid}</td>
+                <td>${d.email}</td>
+                <td style="color:#aaa;">${d.localizacao || '—'}</td>
+                <td style="color:#ffcc00; font-family:monospace;">${d.ip || '—'}</td>
+                <td style="color:#888;">${d.ultimaConexao ? new Date(d.ultimaConexao).toLocaleDateString() : '—'}</td>
+                <td style="color: ${corVencido}; font-weight:bold;">${vencimento.toLocaleDateString()}</td>
+                <td><button class="btn-delete" onclick="deletarCliente('${hwid}')">Bloquear</button></td>
+            `;
+            listaBody.appendChild(tr);
+        });
+    }
+
+    document.getElementById('btnAtualizarLista').onclick = buscarClientesDoRevendedor;
+
+    function mostrarStatus(msg, isSuccess, isLoading) {
+        statusMsg.innerText = msg; statusMsg.style.display = 'block';
+        statusMsg.className = isSuccess ? (isLoading ? '' : 'sucesso') : 'erro';
+        if(!isLoading) setTimeout(() => { statusMsg.style.display = 'none'; }, 4000);
+    }
+</script>
+</body>
+</html>
